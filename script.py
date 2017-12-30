@@ -17,15 +17,12 @@ if cmds.window(winID, exists=True):
 cmds.window(winID, title='GitHub Integration', widthHeight=[500, 1000] )
 
 #Add 1st column
-cmds.rowColumnLayout(numberOfColumns=3, columnAttach=[(1, 'right', 20),(3, 'left', 20)], columnWidth=[(1, 200), (2, 250)])
+cmds.gridLayout(numberOfColumns=3,numberOfRows=2, cellWidth=200)
 
 #Add controls to the layout
 cmds.text(label='Remote Repository URL')
 RemoteURL = cmds.textField()
 cmds.button( label='Link', command='printTxtField(RemoteURL)' )
-
-#Add 2nd column
-cmds.rowColumnLayout(numberOfColumns=3, columnAttach=[(1, 'right', 20),(3, 'left', 20)], columnWidth=[(1, 200), (2, 250)])
 
 #Add controls to the layout
 cmds.text(label='Local Repository')
