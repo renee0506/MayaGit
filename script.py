@@ -9,7 +9,6 @@ import maya.cmds as cmds
 winID = 'GitIntegrationUI'
 
 #verify window existance
-
 if cmds.window(winID, exists=True):
     cmds.deleteUI(winID)
     
@@ -17,7 +16,7 @@ if cmds.window(winID, exists=True):
 cmds.window(winID, title='GitHub Integration', widthHeight=[500, 1000] )
 
 #Add 1st column
-cmds.gridLayout(numberOfColumns=3,numberOfRows=2, cellWidth=200)
+cmds.rowColumnLayout(numberOfColumns=3, columnAttach = [(1,'right',10), (3,'left', 10)], columnWidth=[(1, 250), (2, 250), (3,250)])
 
 #Add controls to the layout
 cmds.text(label='Remote Repository URL')
@@ -70,3 +69,4 @@ repo.index.commit('test username n email')
 local_branch = 'master'
 remote_branch = 'master'
 remote = repo.remotes.origin.push(refspec='{}:{}'.format(local_branch, remote_branch))
+
