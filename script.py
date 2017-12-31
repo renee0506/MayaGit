@@ -13,7 +13,7 @@ if cmds.window(winID, exists=True):
     cmds.deleteUI(winID)
     
 #create fresh UI window
-cmds.window(winID, title='GitHub Integration', widthHeight=[500, 1000] )
+cmds.window(winID, title='GitHub Integration', widthHeight=[800, 500] )
 
 #Add 1st column
 cmds.rowColumnLayout(numberOfColumns=3, columnAttach = [(1,'right',10), (3,'left', 10)], columnWidth=[(1, 250), (2, 250), (3,250)])
@@ -25,8 +25,8 @@ cmds.button( label='Link', command='printTxtField(RemoteURL)' )
 
 #Add controls to the layout
 cmds.text(label='Local Repository')
-LocalRepository = cmds.textField()
-cmds.button( label='Link', command='linkLocalRepo(LocalRepo)' )
+CreateLocalButton = cmds.button( label='Create Local Repo', command='CreateLocalRepo()' )
+LocalPathButton =cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
 
 cmds.showWindow()
 
@@ -45,20 +45,35 @@ def userInformation(Repository):
 def printTxtField( fieldID ):
     remote_path = cmds.textField( fieldID, query=True, text=True)
     print 'Remote GitHub Repository URL: ' + remote_path
-    repo = Repo(path='C:/Users/meiqi/Documents/maya/projects/PythonGithub')
-
-#Function: link local repo to this file
-def linkLocalRepo(fieldID):
-    local_repo = cmds.textField( fieldID, query=True, text=True)
-    print local_repo
-
-# repo = Repo.clone_from(remote_path, "C:/Users/meiqi/Documents/maya/projects/PythonGithub")
     
-    config_reader = repo.config_reader()
+
+#Function: LoadLocalDirectoryPath
+def LoadLocalDirectoryPath():
+    singleFilter = "All Files (*.*)"
+    local_repo = cmds.fileDialog2(fileFilter=singleFilter, dialogStyle=2, fm=3)[0]
+    print 'Local Repository Location: ' +  local_repo
+    repo = Repo(path=local_repo)
+    print repo
+    if CreateLocalButton:
+        cmds.deleteUI(CreateLocalButton, LocalPathButton)
+        print CreateLocalButton
+        cmds.textField( editable=False, tx=local_repo)
+        cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
+    else:
+        cmds.textField( editable=False, tx=local_repo)    
+
+#Function: CreateLocalRepo
+def CreateLocalRepo():
+    singleFilter = "All Files (*.*)"
+    local_repo = cmds.fileDialog2(fileFilter=singleFilter, dialogStyle=2, fm=3)[0] 
+    repo = Repo.clone_from(remote_path, "C:/Users/meiqi/Documents/maya/projects/PythonGithub")
+    
+    
+config_reader = repo.config_reader()
 #config.set_value('user', 'email', 'meiqianye@gmail.com')
 #config.set_value('user', 'name', 'Renee Mei')
-    print (repo)
-    print config_reader.get_value("user", "email")
+print (repo)
+print config_reader.get_value("user", "email")
     
 
 repo.git.add('--all');
