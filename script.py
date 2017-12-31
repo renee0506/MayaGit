@@ -4,6 +4,9 @@ import git
 import maya.cmds as cmds
 
 #------------Start with User-Interface----------------------
+#initialize variable
+LocalRepoField = None
+
 #define id string for the window
 
 winID = 'GitIntegrationUI'
@@ -54,13 +57,22 @@ def LoadLocalDirectoryPath():
     print 'Local Repository Location: ' +  local_repo
     repo = Repo(path=local_repo)
     print repo
-    if CreateLocalButton:
+    global LocalPathButton
+    if cmds.button(CreateLocalButton, query=True, exists=True):
+        
         cmds.deleteUI(CreateLocalButton, LocalPathButton)
         print CreateLocalButton
-        cmds.textField( editable=False, tx=local_repo)
-        cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
+        global LocalRepoField
+        LocalRepoField = cmds.textField( editable=False, tx=local_repo)
+        print LocalRepoField
+        LocalPathButton = cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
     else:
-        cmds.textField( editable=False, tx=local_repo)    
+        global LocalRepoField
+        print "!!!!" + LocalRepoField
+        cmds.deleteUI(LocalRepoField, LocalPathButton)
+        LocalRepoField = cmds.textField(editable=False, tx=local_repo)
+        LocalPathButton = cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
+    
 
 #Function: CreateLocalRepo
 def CreateLocalRepo():
