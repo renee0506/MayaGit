@@ -1,4 +1,3 @@
-from git import *
 import os.path as osp
 import git
 import maya.cmds as cmds
@@ -20,18 +19,26 @@ if cmds.window(winID, exists=True):
 #create fresh UI window
 cmds.window(winID, title='GitHub Integration', widthHeight=[800, 500] )
 
+cmds.frameLayout('master')
 #Add 1st column
-cmds.rowColumnLayout(numberOfColumns=3, columnAttach = [(1,'right',10), (3,'left', 10)], columnWidth=[(1, 250), (2, 250), (3,250)])
+rowColumn = cmds.rowColumnLayout('links', numberOfColumns=3, columnAttach = [(1,'right',10), (3,'left', 10)], columnWidth=[(1, 250), (2, 250), (3,250)], rowSpacing =(10,10))
 
 #Add controls to the layout
 cmds.text(label='Remote Repository URL')
 RemoteURL = cmds.textField()
-cmds.button( label='Link', command='printTxtField(RemoteURL)' )
+cmds.button(label='Link', command='printTxtField(RemoteURL)' )
 
 #Add controls to the layout
 cmds.text(label='Local Repository')
-CreateLocalButton = cmds.button( label='Create Local Repo', command='CreateLocalRepo()' )
-LocalPathButton =cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
+CreateLocalButton = cmds.button('CreateLocalBtn', label='Create Local Repo', command='CreateLocalRepo()' )
+LocalPathButton =cmds.button('LocalDirectoryBtn', label='Local Directory Path', command='LoadLocalDirectoryPath()')
+
+cmds.setParent('master')
+rowColumn = cmds.rowColumnLayout(numberOfColumns=3, columnAttach = [(1,'right',10), (3,'left', 10)], columnWidth=[(1, 250), (2, 250), (3,250)], rowSpacing =(10,10))
+#Add commit button
+CreateCommitButton = cmds.button(label='Commit All', command='CommitAll()')
+#Add push button
+CreatePushButton = cmds.button(label='Push', command='Push()')
 
 cmds.showWindow()
 
@@ -67,13 +74,13 @@ def LoadLocalDirectoryPath():
         
         cmds.deleteUI(CreateLocalButton, LocalPathButton)
         global LocalRepoField
-        LocalRepoField = cmds.textField( editable=False, tx=local_repo)
-        LocalPathButton = cmds.button(label='Local Directory Path', command='LoadLocalDirectoryPath()')
+        LocalRepoField = cmds.textField(parent='links', editable=False, tx=local_repo)
+        LocalPathButton = cmds.button(parent='links', label='Local Directory Path', command='LoadLocalDirectoryPath()')
     else:
         global LocalRepoField
         cmds.deleteUI(LocalRepoField, LocalPathButton)
-        LocalRepoField = cmds.textField(editable=False, tx=local_repo)
-        LocalPathButton = cmds.button(label='Change Local Directory Path', command='LoadLocalDirectoryPath()')     
+        LocalRepoField = cmds.textField(parent='links', editable=False, tx=local_repo)
+        LocalPathButton = cmds.button(parent='links', label='Change Local Directory Path', command='LoadLocalDirectoryPath()')     
 
 def FindRepoName(remotePathName, index):
     name = ''
@@ -106,20 +113,19 @@ def CreateLocalRepo():
     LocalRepoField = cmds.textField( editable=False, tx=local_repo)
     LocalPathButton = cmds.button(label='Change Local Directory Path', command='LoadLocalDirectoryPath()')
 
+def CommitAll():
+    repo.git.add('--all');
+    print (repo.git)
+    repo.index.commit('committed by Maya Git Integration')
+    
+def Push():
+    local_branch = 'master'
+    remote_branch = 'master'
+    remote = repo.remotes.origin.push(refspec='{}:{}'.format(local_branch, remote_branch))
         
 config_reader = repo.config_reader()
 #config.set_value('user', 'email', 'meiqianye@gmail.com')
 #config.set_value('user', 'name', 'Renee Mei')
 print (repo)
 print config_reader.get_value("user", "email")
-    
-
-repo.git.add('--all');
-
-print (repo.git)
-
-repo.index.commit('test username n email')
-local_branch = 'master'
-remote_branch = 'master'
-remote = repo.remotes.origin.push(refspec='{}:{}'.format(local_branch, remote_branch))
 
