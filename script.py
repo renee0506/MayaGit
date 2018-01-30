@@ -1,5 +1,6 @@
 import os.path as osp
 import git
+from git import Repo
 import maya.cmds as cmds
 from maya import OpenMayaUI as omui
 from PySide2 import QtWidgets
@@ -10,35 +11,40 @@ class UserInformation():
     remote_url = None
     repo = None
 
+if cmds.fileInfo('GitRemote', query=True)[0]:
+    print cmds.fileInfo('GitRemote', query=True)[0]
+    UserInformation.remote_url = cmds.fileInfo('GitRemote', query=True)[0]
+
+print cmds.fileInfo('GitLocal', query=True)
+if cmds.fileInfo('GitLocal', query=True):
+    UserInformation.repo = Repo(path=cmds.fileInfo('GitLocal', query=True)[0])
 #-------------------------------------Back-End Functions----------------------------------------------------------------
 
 #preparation
 join = osp.join
 
-#initialize
-remote_path = None
-repo = None
+
+
 
 #initialize variable
-LocalRepoField = None
-LocalPathButton = None
 remote_input = None
 
 def LinkRemote():
     global remote_input
-    UserInformation.remote_url = remote_input.text() 
+    UserInformation.remote_url = remote_input.text()
     print 'Remote GitHub Repository URL: ' + UserInformation.remote_url
-    
+    cmds.fileInfo('GitRemote',UserInformation.remote_url)
+
 #Function: examine if user information exists
 def userInformation(Repository):
     config_reader = repo.config_reader()
-    
+
 #Function: obtain text input, assign to remote path and print text input into History pane in script editior
 #def LinkRemote( fieldID ):
     #global remote_path
     #remote_path = cmds.textField( fieldID, query=True, text=True)
     #print 'Remote GitHub Repository URL: ' + remote_path
-    
+
 
 #Function: LoadLocalDirectoryPath
 def LoadLocalDirectoryPath():
@@ -47,22 +53,14 @@ def LoadLocalDirectoryPath():
     local_repo = cmds.fileDialog2(fileFilter=singleFilter, dialogStyle=2, fm=3)[0]
     print 'Local Repository Location: ' +  local_repo
     #assign string input to local repo path variable
-    global repo
-    repo = Repo(path=local_repo)
- 
-    global LocalPathButton
-    if cmds.button(CreateLocalButton, query=True, exists=True):
-        #delete 'create local path' button if the button still exists, replace with textfield and regenerate the pick local path button
-        cmds.deleteUI(CreateLocalButton, LocalPathButton)
-        global LocalRepoField
-        LocalRepoField = cmds.textField(parent='links', editable=False, tx=local_repo)
-        LocalPathButton = cmds.button(parent='links', label='Local Directory Path', command='LoadLocalDirectoryPath()')
-    #else:
-        #replace the content in the textfield holding the local path
-        #global LocalRepoField
-        #cmds.deleteUI(LocalRepoField, LocalPathButton)
-        #LocalRepoField = cmds.textField(parent='links', editable=False, tx=local_repo)
-        #LocalPathButton = cmds.button(parent='links', label='Change Local Directory Path', command='LoadLocalDirectoryPath()')     
+    UserInformation.repo = Repo(path=local_repo)
+
+    create_button.hide()
+    local_input.show()
+    local_input.setText(local_repo)
+    local_input.setReadOnly(True)
+    cmds.fileInfo('GitLocal', local_repo)
+
 
 #Extract the name of the remote repository from the url
 def FindRepoName(remotePathName, index):
@@ -76,7 +74,7 @@ def FindRepoName(remotePathName, index):
             name = remotePathName[i] + name
             i = i-1
     return name
-    
+
 #Function: CreateLocalRepo
 def CreateLocalRepo():
     print '!!'
@@ -87,41 +85,46 @@ def CreateLocalRepo():
     print name
     #Open file browser to pick a directory to where the user wants to clone the remote repository
     singleFilter = "All Files (*.*)"
-    local_repo = cmds.fileDialog2(fileFilter=singleFilter, dialogStyle=2, fm=3)[0] + '/' + name 
+    local_repo = cmds.fileDialog2(fileFilter=singleFilter, dialogStyle=2, fm=3)[0] + '/' + name
     UserInformation.repo = Repo.clone_from(UserInformation.remote_url, local_repo)
+    #Popout Message Box
+    CreatePopMessage(local_repo)
     #delete 'create local path' button, replace with textfield and regenerate the pick local path button
-    #cmds.deleteUI(CreateLocalButton, LocalPathButton)
-    #global LocalRepoField
-    #global LocalPathButton
-    #LocalRepoField = cmds.textField( editable=False, tx=local_repo)
-    #LocalPathButton = cmds.button(label='Change Local Directory Path', command='LoadLocalDirectoryPath()')
+    create_button.hide()
+    local_input.show()
+    local_input.setText(local_repo)
+    local_input.setReadOnly(True)
+    cmds.fileInfo('GitLocal', local_repo)
 
 #Function: Commit all
 def CommitAll():
-    repo.git.add('--all');
-    print (repo.git)
-    repo.index.commit('committed by Maya Git Integration')
+    print UserInformation.repo
+    ret = CommitMessage()
+    if ret == QtWidgets.QMessageBox.Yes:
+        UserInformation.repo.git.add('--all');
+        UserInformation.repo.index.commit('committed by Maya Git Integration')
 
-#Function: Push    
+#Function: Push
 def Push():
     local_branch = 'master'
     remote_branch = 'master'
+    ret = PushMessage()
+    if ret == QtWidgets.QMessageBox.Yes:
     #push from local master to remote master
-    remote = repo.remotes.origin.push(refspec='{}:{}'.format(local_branch, remote_branch))
-        
+        remote = UserInformation.repo.remotes.origin.push(refspec='{}:{}'.format(local_branch, remote_branch))
+
 #config_reader = repo.config_reader()
 #config.set_value('user', 'email', 'meiqianye@gmail.com')
 #config.set_value('user', 'name', 'Renee Mei')
-print (repo)
 #print config_reader.get_value("user", "email")
 
 #-------User Interface-------------------------------------------------------------------------
-       
+
 window = QtWidgets.QWidget()
 window.resize(500,200)
 window.setWindowTitle('MayaGit')
 
-windowLayout = QtWidgets.QGridLayout()  
+windowLayout = QtWidgets.QGridLayout()
 windowLayout.setContentsMargins(50, 50, 50, 50)
 windowLayout.setColumnStretch(1, -1)
 
@@ -130,8 +133,10 @@ remote_label = QtWidgets.QLabel('Remote Repository Url')
 windowLayout.addWidget(remote_label, 0, 0)
 
 remote_input = QtWidgets.QLineEdit()
+if UserInformation.remote_url:
+    remote_input.setText(UserInformation.remote_url)
 windowLayout.addWidget(remote_input, 0, 1)
-          
+
 remote_button = QtWidgets.QPushButton("Link Remote Repository")
 windowLayout.addWidget(remote_button, 0, 2)
 remote_button.clicked.connect(LinkRemote)
@@ -142,21 +147,54 @@ windowLayout.addWidget(local_label, 1, 0)
 create_button = QtWidgets.QPushButton('Create Local Repository')
 windowLayout.addWidget(create_button, 1, 1)
 create_button.clicked.connect(CreateLocalRepo)
+local_input = QtWidgets.QLineEdit()
+windowLayout.addWidget(local_input, 1, 1)
+if cmds.fileInfo('GitLocal', query=True):
+    print '!!'
+    create_button.hide()
+    local_input.setText(cmds.fileInfo('GitLocal', query=True)[0])
+    local_input.setReadOnly(True)
+else:
+    local_input.hide()
+
 
 select_button = QtWidgets.QPushButton('Local Directory Path')
 windowLayout.addWidget(select_button, 1, 2)
+select_button.clicked.connect(LoadLocalDirectoryPath)
 
 commitall_button = QtWidgets.QPushButton('Commit All')
 windowLayout.addWidget(commitall_button, 2, 1)
+commitall_button.clicked.connect(CommitAll)
 
 push_button = QtWidgets.QPushButton('Push')
 windowLayout.addWidget(push_button, 3, 1)
-    
+push_button.clicked.connect(Push)
+
+def CreatePopMessage(path):
+    createLocalMsgBox = QtWidgets.QMessageBox()
+    createLocalMsgBox.setText("You have successfully created a local repository: " + path)
+    createLocalMsgBox.exec_()
+
+def CommitMessage():
+    msgBox = QtWidgets.QMessageBox()
+    msgBox.setText("Do you want to stage and commit all files in the repository?")
+    msgBox.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Discard)
+    msgBox.setDefaultButton(QtWidgets.QMessageBox.Discard)
+    return msgBox.exec_()
+
+def PushMessage():
+    msgBox = QtWidgets.QMessageBox()
+    msgBox.setText("Do you want to push from local master to remote master?")
+    msgBox.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Discard)
+    msgBox.setDefaultButton(QtWidgets.QMessageBox.Discard)
+    return msgBox.exec_()
+
+
 window.setLayout(windowLayout)
 window.show()
 
 
-    
+
 
 
 #------------------Back-End Functions------------------------
@@ -176,7 +214,7 @@ winID = 'GitIntegrationUI'
 #verify window existance
 if cmds.window(winID, exists=True):
     cmds.deleteUI(winID)
-    
+
 #create fresh UI window
 cmds.window(winID, title='GitHub Integration', widthHeight=[800, 500] )
 
